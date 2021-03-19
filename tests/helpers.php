@@ -15,47 +15,33 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This file defines the quiz marks per section report class.
+ * Facilitate testing of quiz_markspersection report.
  *
  * @package   quiz_markspersection
  * @copyright 2021 Université de Montréal
- * @author    Issam Taboubi <issam.taboubi@umontreal.ca>
+ * @author    Marie-Eve Lévesque <marie-eve.levesque.8@umontreal.ca>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-use quiz_markspersection\quiz_attemptreport;
+global $CFG;
 
 /**
- * Quiz report to help teachers display marks per section.
+ * Facilitate testing of quiz_markspersection report.
  *
  * @copyright 2021 Université de Montréal
- * @author    Issam Taboubi <issam.taboubi@umontreal.ca>
+ * @author    Marie-Eve Lévesque <marie-eve.levesque.8@umontreal.ca>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class quiz_markspersection_report extends quiz_default_report {
-
+class testable_quiz_markspersection_report extends quiz_markspersection_report {
     /**
-     * Override this function to display the report.
-     *
-     * @param stdClass $quiz this quiz.
-     * @param stdClass $cm the course-module for this quiz.
-     * @param stdClass $course the course we are in.
-     */
-    public function display($quiz, $cm, $course) {
-        $this->print_header_and_tabs($cm, $course, $quiz);
-        return true;
-    }
-
-    /**
-     * Return sections marks.
+     * Testable get_sections_marks function.
      *
      * @param int $attemptid
-     * @return array data of sections marks.
      */
-    protected function get_sections_marks($attemptid) {
-        $attemptobj = quiz_attemptreport::create($attemptid);
-        return $attemptobj->get_sections_marks();
+    public function get_sections_marks($attemptid) {
+        $marks = parent::get_sections_marks($attemptid);
+        return $marks;
     }
 }
