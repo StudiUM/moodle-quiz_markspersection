@@ -38,17 +38,18 @@ global $CFG;
  */
 class quiz_attemptreport extends \quiz_attempt {
 
+    /** @var array Already calculated sections marks, stored in this variable for further use (to avoid recalculation). */
+    private $sectionmarks = null;
+
     /**
      * Return sections marks.
      *
      * @return array data of sections marks.
      */
     public function get_sections_marks() {
-        $quba = $this->get_question_usage();
-
-        $sections = $this->quizobj->get_sections();
-        $sectionsmarks = [];
-        if (count($sections) > 1) {
+        if (is_null($this->sectionmarks)) {
+            $sections = $this->quizobj->get_sections();
+            $sectionsmarks = [];
             // Initialize sections marks.
             foreach ($sections as $section) {
                 $sectionsmarks[$section->id] = ['heading' => $section->heading,
@@ -59,19 +60,21 @@ class quiz_attemptreport extends \quiz_attempt {
             foreach ($this->get_slots() as $slot) {
                 $sectionid = $this->get_sectionid($slot);
                 if (isset($sectionsmarks[$sectionid])) {
-                    $sectionsmarks[$sectionid]['sumgrades'] += $quba->get_question_mark($slot);
-                    $sectionsmarks[$sectionid]['summaxgrades'] += $quba->get_question_max_mark($slot);
+                    $sectionsmarks[$sectionid]['sumgrades'] += $this->quba->get_question_mark($slot);
+                    $sectionsmarks[$sectionid]['summaxgrades'] += $this->quba->get_question_max_mark($slot);
                 }
             }
-        }
-        // Format grades.
-        array_walk_recursive($sectionsmarks, function(&$item, $key) {
-            if (in_array($key, ['sumgrades', 'summaxgrades'])) {
-                $item = quiz_format_question_grade($this->get_quiz(), $item);
-            }
-        });
 
-        return $sectionsmarks;
+            // Format grades.
+            array_walk_recursive($sectionsmarks, function(&$item, $key) {
+                if (in_array($key, ['sumgrades', 'summaxgrades'])) {
+                    $item = quiz_format_question_grade($this->get_quiz(), $item);
+                }
+            });
+            $this->sectionmarks = $sectionsmarks;
+        }
+
+        return $this->sectionmarks;
     }
 
     /**

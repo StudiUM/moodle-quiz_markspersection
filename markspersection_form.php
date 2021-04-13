@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Facilitate testing of quiz_markspersection report.
+ * This file defines the setting form for the quiz marks per section report.
  *
  * @package   quiz_markspersection
  * @copyright 2021 Université de Montréal
@@ -25,23 +25,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-global $CFG;
+require_once($CFG->dirroot . '/mod/quiz/report/attemptsreport_form.php');
 
 /**
- * Facilitate testing of quiz_markspersection report.
+ * Quiz marks per section report settings form.
  *
  * @copyright 2021 Université de Montréal
  * @author    Marie-Eve Lévesque <marie-eve.levesque.8@umontreal.ca>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class testable_quiz_markspersection_report extends quiz_markspersection_report {
-    /**
-     * Testable get_sections_marks function.
-     *
-     * @param int $attemptid
-     */
-    public function get_sections_marks($attemptid) {
-        $marks = parent::get_sections_marks($attemptid);
-        return $marks;
-    }
+class quiz_markspersection_settings_form extends mod_quiz_attempts_report_form {
+
 }

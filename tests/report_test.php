@@ -28,8 +28,8 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/mod/quiz/report/default.php');
 require_once($CFG->dirroot . '/mod/quiz/report/markspersection/report.php');
-require_once($CFG->dirroot . '/mod/quiz/report/markspersection/tests/helpers.php');
 
+use \quiz_markspersection\quiz_attemptreport;
 
 /**
  * Tests for the quiz marks per section report.
@@ -113,11 +113,14 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $attemptobj->process_submitted_actions($timenow, false, $tosubmit);
         $attemptobj->process_finish($timenow, false);
 
-        $quizattemptsreport = new testable_quiz_markspersection_report();
-
-        // Check the data for the report - should be empty.
-        $sectionsmarks = $quizattemptsreport->get_sections_marks($attemptobj->get_attemptid());
-        $this->assertEmpty($sectionsmarks);
+        // Check the data for the report - there is at least one section.
+        $quizattemptsreport = quiz_attemptreport::create($attemptobj->get_attemptid());
+        $sectionsmarks = $quizattemptsreport->get_sections_marks();
+        $sectionsmarks = array_values($sectionsmarks);
+        $this->assertCount(1, $sectionsmarks);
+        $this->assertEquals('', $sectionsmarks[0]['heading']);
+        $this->assertEquals(6, $sectionsmarks[0]['sumgrades']);
+        $this->assertEquals(11.75, $sectionsmarks[0]['summaxgrades']);
 
         // Case 2 : When there are sections in the quiz.
         // Create the structure and sections in the quiz.
@@ -150,9 +153,10 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $attemptobj->process_finish($timenow, false);
 
         // Check the data for the report.
-        $quizattemptsreport = new testable_quiz_markspersection_report();
+        $quizattemptsreport = new quiz_markspersection_report();
 
-        $sectionsmarks = $quizattemptsreport->get_sections_marks($attemptobj->get_attemptid());
+        $quizattemptsreport = quiz_attemptreport::create($attemptobj->get_attemptid());
+        $sectionsmarks = $quizattemptsreport->get_sections_marks();
         $sectionsmarks = array_values($sectionsmarks);
         $this->assertCount(3, $sectionsmarks);
         $this->assertEquals('Section 1', $sectionsmarks[0]['heading']);
