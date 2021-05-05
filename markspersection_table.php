@@ -198,4 +198,118 @@ class quiz_markspersection_table extends quiz_overview_table {
     protected function submit_buttons() {
         quiz_attempts_report_table::submit_buttons();
     }
+
+    /**
+     * Redefine the parent function : lastest steps are always needed for this report.
+     *
+     * @return bool true (always true for this report).
+     */
+    protected function requires_latest_steps_loaded() {
+        return true;
+    }
+
+    /**
+     * Redefine the parent function : the last columns are sections marks.
+     *
+     * @param string $column a column name
+     * @return int false if no, else a slot.
+     */
+    protected function is_latest_step_column($column) {
+        if (preg_match('/^sectionmark([0-9]+)/', $column, $matches)) {
+            return $matches[1];
+        }
+        return false;
+    }
+
+    /**
+     * Redefine the parent function : This is the field needed for sorting by sections marks.
+     *
+     * @param int $slot the slot for the column we want.
+     * @param string $alias the table alias for latest state information relating to that slot.
+     */
+    protected function get_required_latest_state_fields($slot, $alias) {
+        // The name "marksection" comes from the subquery in question_attempt_latest_state_view.
+        return "$alias.marksection AS sectionmark$slot";
+    }
+
+    /**
+     * Redefine the parent function.
+     * The only difference is the call from question_attempt_latest_state_view which point to the function in this class instead.
+     *
+     * @param int $slot the slot for the column we want.
+     */
+    protected function add_latest_state_join($slot) {
+        $alias = 'qa' . $slot;
+
+        $fields = $this->get_required_latest_state_fields($slot, $alias);
+        if (!$fields) {
+            return;
+        }
+
+        // This condition roughly filters the list of attempts to be considered.
+        // It is only used in a subselect to help crappy databases (see MDL-30122)
+        // therefore, it is better to use a very simple join, which may include
+        // too many records, than to do a super-accurate join.
+        $qubaids = new qubaid_join("{quiz_attempts} {$alias}quiza", "{$alias}quiza.uniqueid",
+                "{$alias}quiza.quiz = :{$alias}quizid", array("{$alias}quizid" => $this->sql->params['quizid']));
+
+        list($inlineview, $viewparams) = $this->question_attempt_latest_state_view($alias, $qubaids);
+
+        $this->sql->fields .= ",\n$fields";
+        $this->sql->from .= "\nLEFT JOIN $inlineview ON " .
+                "$alias.questionusageid = quiza.uniqueid";
+        $this->sql->params[$alias . 'slot'] = $slot;
+        $this->sql->params = array_merge($this->sql->params, $viewparams);
+    }
+
+    /**
+     * This is copied from question_attempt_latest_state_view from question_engine_data_mapper in question/engine/datalib.php.
+     * Get a subquery that returns the latest step of every qa in some qubas.
+     * We here bypass the subquery for every question by grouping them by section.
+     *
+     * @param string $alias alias to use for this inline-view.
+     * @param qubaid_condition $qubaids restriction on which question_usages we
+     *      are interested in. This is important for performance.
+     * @return array with two elements, the SQL fragment and any params requried.
+     */
+    public function question_attempt_latest_state_view($alias, qubaid_condition $qubaids) {
+        // Get the questions in the section we are ordering by. The questions ids are then inserted in the subquery.
+        $sectionid = substr($alias, 2);
+        $questions = $this->get_questions_in_section($sectionid);
+        $questionsidsstr = implode(',', $questions);
+
+        $where = $qubaids->where() . " AND {$alias}qa.questionid IN($questionsidsstr)";
+        $whereparams = $qubaids->from_where_params();
+        // The name "marksection" givent to the SUM function is the one to reuse in get_required_latest_state_fields.
+        return array("(
+                SELECT {$alias}qa.questionusageid,
+                       SUM({$alias}qas.fraction * {$alias}qa.maxmark) AS marksection,
+                       {$alias}qas.userid
+                  FROM {$qubaids->from_question_attempts($alias . 'qa')}
+                  JOIN {question_attempt_steps} {$alias}qas ON {$alias}qas.questionattemptid = {$alias}qa.id
+                 WHERE {$where}
+                 GROUP BY {$alias}qa.questionusageid, {$alias}qas.userid
+            ) {$alias}", $whereparams);
+    }
+
+    /**
+     * Get all the questions in the specified section.
+     *
+     * @param int $sectionid The id of the section.
+     */
+    public function get_questions_in_section($sectionid) {
+        $cm = get_coursemodule_from_instance('quiz', $this->quiz->id, $this->quiz->course, false, MUST_EXIST);
+        $quizobj = new \quiz($this->quiz, $cm, $this->quiz->course);
+        $structure = $quizobj->get_structure();
+        $slots = $structure->get_slots_in_section($sectionid);
+
+        // Get all the questions in the slots of this section.
+        $questionsinsection = array();
+        foreach ($this->questions as $question) {
+            if (in_array($question->slot, $slots)) {
+                $questionsinsection[] = $question->id;
+            }
+        }
+        return $questionsinsection;
+    }
 }
