@@ -41,6 +41,12 @@ class quiz_markspersection_table extends quiz_overview_table {
     /** @var array Array of quiz_attemptreport (kept for further usage, to avoid unnecessary initialisations and calculations). */
     private $attemptreports = array();
 
+    /** @var array Array of attemps section marks. */
+    private $attemptsectionsmarks = array();
+
+    /** @var Array Array of attempts ids in the report. */
+    private $attemptsids = [];
+
     /**
      * Constructor
      * @param object $quiz
@@ -86,21 +92,104 @@ class quiz_markspersection_table extends quiz_overview_table {
         $marks = $attemptobj->get_sections_marks();
 
         $section = $matches[1];
-        return $marks[$section]['sumgrades'];
+        $sumgrades = $marks[$section]['sumgrades'];
+        if ($sumgrades !== null) {
+            $sumgrades = quiz_format_question_grade($this->quiz, $sumgrades);
+        } else {
+            return '-';
+        }
+        return $sumgrades;
     }
 
     /**
-     * Redefine the parent function with only relevant information (quiz_overview_table has too many).
+     * Calculate sum of sections marks.
+     *
+     * @param array $attemptsids array of attempts ids.
      */
-    public function build_table() {
+    public function calculate_sections_sum($attemptsids) {
+        foreach ($attemptsids as $attemptid) {
+            if (!(isset($this->attemptreports[$attemptid]))) {
+                $this->attemptreports[$attemptid] = quiz_attemptreport::create($attemptid);
+            }
+            $attemptobj = $this->attemptreports[$attemptid];
+            $marks = $attemptobj->get_sections_marks();
+            foreach ($marks as $key => $section) {
+                $sumgrades = $marks[$key]['sumgrades'];
+                $colname = 'sectionmark' . $key;
+
+                // Calculate the sum of section marks for each attempt.
+                if (!isset($this->attemptsectionsmarks[$colname]) && $sumgrades !== null) {
+                    $this->attemptsectionsmarks[$colname] = $sumgrades;
+                } else if ($sumgrades !== null) {
+                    $this->attemptsectionsmarks[$colname] += $sumgrades;
+                }
+                if ($sumgrades !== null) {
+                    $this->attemptsids[$colname][] = $attemptid;
+                }
+            }
+        }
+    }
+
+    /**
+     * Calculate the average overall and section marks for a set of attempts at the quiz.
+     *
+     * @param string $label the title to use for this row.
+     * @param \core\dml\sql_join $usersjoins to indicate a set of users.
+     * @return array of table cells that make up the average row.
+     */
+    public function compute_average_row($label, \core\dml\sql_join $usersjoins) {
         global $DB;
 
-        if (!$this->rawdata) {
-            return;
+        list($fields, $from, $where, $params) = $this->base_sql($usersjoins);
+        $record = $DB->get_record_sql("
+                SELECT AVG(quizaouter.sumgrades) AS grade, COUNT(quizaouter.sumgrades) AS numaveraged
+                  FROM {quiz_attempts} quizaouter
+                  JOIN (
+                       SELECT DISTINCT quiza.id
+                         FROM $from
+                        WHERE $where
+                       ) relevant_attempt_ids ON quizaouter.id = relevant_attempt_ids.id
+                ", $params);
+        $record->grade = quiz_rescale_grade($record->grade, $this->quiz, false);
+        if ($this->is_downloading()) {
+            $namekey = 'lastname';
+        } else {
+            $namekey = 'fullname';
         }
+        $averagerow = array(
+            $namekey       => $label,
+            'sumgrades'    => $this->format_average($record),
+            'feedbacktext' => strip_tags(quiz_report_feedback_for_grade(
+                                         $record->grade, $this->quiz->id, $this->context))
+        );
+        $qubaids = new qubaid_join("{quiz_attempts} quizaouter
+                JOIN (
+                    SELECT DISTINCT quiza.id
+                        FROM $from
+                    WHERE $where
+                    ) relevant_attempt_ids ON quizaouter.id = relevant_attempt_ids.id",
+                'quizaouter.uniqueid', '1 = 1', $params);
+        $sql = "
+            SELECT  DISTINCT quizaouter.id
+              FROM {$qubaids->from_question_attempts('qa')}
+             WHERE {$qubaids->where()}";
+        $attemptsids = $DB->get_records_sql($sql, $qubaids->from_where_params());
 
-        $this->strtimeformat = str_replace(',', ' ', get_string('strftimedatetime'));
-        quiz_attempts_report_table::build_table();
+        // Calcute the average of sections marks.
+        $this->calculate_sections_sum(array_keys($attemptsids));
+        if (!empty($this->attemptsectionsmarks) && !empty($this->attemptsids)) {
+            array_walk_recursive($this->attemptsectionsmarks, function(&$item, $key) {
+                if (is_numeric($item)) {
+                    $item = $item / count($this->attemptsids[$key]);
+                    $record = new stdClass();
+                    $record->grade = $item;
+                    $record->numaveraged = count($this->attemptsids[$key]);
+                    $item = $this->format_average($record);
+                }
+            });
+            $averagerow += $this->attemptsectionsmarks;
+        }
+        return $averagerow;
     }
 
     /**

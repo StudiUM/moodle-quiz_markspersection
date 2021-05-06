@@ -53,24 +53,21 @@ class quiz_attemptreport extends \quiz_attempt {
             // Initialize sections marks.
             foreach ($sections as $section) {
                 $sectionsmarks[$section->id] = ['heading' => $section->heading,
-                    'quizid' => $section->quizid, 'sumgrades' => 0, 'summaxgrades' => 0];
+                    'quizid' => $section->quizid, 'sumgrades' => null, 'summaxgrades' => 0];
             }
 
             // Calculate grades by section.
             foreach ($this->get_slots() as $slot) {
                 $sectionid = $this->get_sectionid($slot);
                 if (isset($sectionsmarks[$sectionid])) {
-                    $sectionsmarks[$sectionid]['sumgrades'] += $this->quba->get_question_mark($slot);
+                    $mark = $this->quba->get_question_mark($slot);
+                    if ($mark !== null) {
+                        $sectionsmarks[$sectionid]['sumgrades'] += $mark;
+                    }
                     $sectionsmarks[$sectionid]['summaxgrades'] += $this->quba->get_question_max_mark($slot);
                 }
             }
 
-            // Format grades.
-            array_walk_recursive($sectionsmarks, function(&$item, $key) {
-                if (in_array($key, ['sumgrades', 'summaxgrades'])) {
-                    $item = quiz_format_question_grade($this->get_quiz(), $item);
-                }
-            });
             $this->sectionmarks = $sectionsmarks;
         }
 

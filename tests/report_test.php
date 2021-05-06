@@ -27,6 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot . '/mod/quiz/report/default.php');
+require_once($CFG->dirroot . '/mod/quiz/report/reportlib.php');
 require_once($CFG->dirroot . '/mod/quiz/report/markspersection/report.php');
 
 use \quiz_markspersection\quiz_attemptreport;
@@ -168,5 +169,162 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $this->assertEquals(4, $sectionsmarks[0]['summaxgrades']);
         $this->assertEquals(2.75, $sectionsmarks[1]['summaxgrades']);
         $this->assertEquals(5, $sectionsmarks[2]['summaxgrades']);
+    }
+
+    /**
+     * Test compute_average_row function
+     */
+    public function test_compute_average_row() {
+        $this->resetAfterTest();
+
+        // Create a course.
+        $user = $this->getDataGenerator()->create_user();
+        $user2 = $this->getDataGenerator()->create_user();
+        $course = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id);
+        $this->getDataGenerator()->enrol_user($user2->id, $course->id);
+
+        // Create 2 quizzes : one without sections and one with sections.
+        $quizgenerator = $this->getDataGenerator()->get_plugin_generator('mod_quiz');
+
+        $quiz1 = $quizgenerator->create_instance(array('course' => $course->id, 'questionsperpage' => 0,
+            'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback'));
+
+        $quizobj1 = quiz::create($quiz1->id, $user->id);
+        $quizobj2 = quiz::create($quiz1->id, $user2->id);
+
+        $quba1 = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj1->get_context());
+        $quba1->set_preferred_behaviour($quizobj1->get_quiz()->preferredbehaviour);
+        $cm1 = get_coursemodule_from_instance('quiz', $quiz1->id, $course->id);
+
+        $quba2 = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj2->get_context());
+        $quba2->set_preferred_behaviour($quizobj2->get_quiz()->preferredbehaviour);
+
+        // Create questions and add them to both quizzes.
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $questiongenerator->create_question_category();
+
+        $question1 = $questiongenerator->create_question('truefalse', null, ['category' => $cat->id]);
+        quiz_add_quiz_question($question1->id, $quiz1, 1, 2.5);
+
+        $question2 = $questiongenerator->create_question('truefalse', null, ['category' => $cat->id]);
+        quiz_add_quiz_question($question2->id, $quiz1, 1, 1.5);
+
+        $question3 = $questiongenerator->create_question('truefalse', null, ['category' => $cat->id]);
+        quiz_add_quiz_question($question3->id, $quiz1, 2, 1);
+
+        $question4 = $questiongenerator->create_question('truefalse', null, ['category' => $cat->id]);
+        quiz_add_quiz_question($question4->id, $quiz1, 2, 1.75);
+
+        $question5 = $questiongenerator->create_question('truefalse', null, ['category' => $cat->id]);
+        quiz_add_quiz_question($question5->id, $quiz1, 3, 2);
+
+        $question6 = $questiongenerator->create_question('truefalse', null, ['category' => $cat->id]);
+        quiz_add_quiz_question($question6->id, $quiz1, 3, 3);
+
+        // Create the structure and sections in the quiz for student 1.
+        $structure = \mod_quiz\structure::create_for_quiz($quizobj1);
+        // Default section.
+        $sections = $structure->get_sections();
+        $firstsection = reset($sections);
+        $structure->set_section_heading($firstsection->id, 'Section 1');
+
+        // Section 2.
+        $section2 = $structure->add_section_heading(2, 'Section 2');
+
+        // Section 3.
+        $section3 = $structure->add_section_heading(3, 'Section 3');
+
+        $timenow = time();
+        $attempt = quiz_create_attempt($quizobj1, 1, false, $timenow, false, $user->id);
+        quiz_start_new_attempt($quizobj1, $quba1, $attempt, 1, $timenow);
+        quiz_attempt_save_started($quizobj1, $quba1, $attempt);
+
+        // Process some responses from the student 1.
+        $attemptobj = quiz_attempt::create($attempt->id);
+        $tosubmit = array(1 => array('answer' => 0),
+            2 => array('answer' => 0),
+            3 => array('answer' => 1),
+            4 => array('answer' => 0),
+            5 => array('answer' => 1),
+            6 => array('answer' => 1));
+        $attemptobj->process_submitted_actions($timenow, false, $tosubmit);
+        $attemptobj->process_finish($timenow, false);
+
+        // Process some responses from the student 2.
+        $timenow = time();
+        $attempt = quiz_create_attempt($quizobj2, 1, false, $timenow, false, $user2->id);
+        quiz_start_new_attempt($quizobj2, $quba2, $attempt, 1, $timenow);
+        quiz_attempt_save_started($quizobj2, $quba2, $attempt);
+
+        $attemptobj = quiz_attempt::create($attempt->id);
+        $tosubmit = array(1 => array('answer' => 0),
+            2 => array('answer' => 1),
+            3 => array('answer' => 1));
+        $attemptobj->process_submitted_actions($timenow, false, $tosubmit);
+        $attemptobj->process_finish($timenow, false);
+
+        // Check the data for the report.
+        $context = context_module::instance($cm1->id);
+        $cm = get_coursemodule_from_id('quiz', $cm1->id);
+        $qmsubselect = quiz_report_qm_filter_select($quiz1);
+        $studentsjoins = get_enrolled_with_capabilities_join($context, '',
+                array('mod/quiz:attempt', 'mod/quiz:reviewmyattempts'));
+        $empty = new \core\dml\sql_join();
+
+        // Set the options.
+        $reportoptions = new quiz_markspersection_options('overview', $quiz1, $cm, null);
+        $reportoptions->attempts = quiz_attempts_report::ENROLLED_ALL;
+        $reportoptions->onlygraded = true;
+        $reportoptions->states = array(quiz_attempt::IN_PROGRESS, quiz_attempt::OVERDUE, quiz_attempt::FINISHED);
+
+        // Load the required questions.
+        $questions = quiz_report_get_significant_questions($quiz1);
+
+        $table = new quiz_markspersection_table($quiz1, $context, $qmsubselect, $reportoptions,
+        $empty, $studentsjoins, $questions, null);
+        $table->download = null;
+        $table->define_columns(array('fullname'));
+        $table->sortable(true, 'uniqueid');
+        $table->define_baseurl(new moodle_url('/mod/quiz/report.php'));
+        $table->setup();
+
+        // Run the query.
+        $table->setup_sql_queries($studentsjoins);
+        $table->query_db(30, false);
+
+        // Check the calculation of averages.
+        $averagerow = $table->compute_average_row('overallaverage', $studentsjoins);
+        $this->assertStringContainsString('0.75', $averagerow['sectionmark' . $firstsection->id]);
+        $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $firstsection->id]);
+        $this->assertStringContainsString('1.00', $averagerow['sectionmark' . $section2]);
+        $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $section2]);
+        $this->assertStringContainsString('5.00', $averagerow['sectionmark' . $section3]);
+        $this->assertStringContainsString('(1)', $averagerow['sectionmark' . $section3]);
+
+        // Check the calculation of averages when display one per page.
+        // Load the required questions.
+        $questions = quiz_report_get_significant_questions($quiz1);
+
+        $table = new quiz_markspersection_table($quiz1, $context, $qmsubselect, $reportoptions,
+        $empty, $studentsjoins, $questions, null);
+        $table->download = null;
+        $table->define_columns(array('fullname'));
+        $table->sortable(true, 'uniqueid');
+        $table->define_baseurl(new moodle_url('/mod/quiz/report.php'));
+        $table->setup();
+
+        // Run the query with 1 result per page.
+        $table->setup_sql_queries($studentsjoins);
+        $table->query_db(1, false);
+        $averagerow = $table->compute_average_row('overallaverage', $studentsjoins);
+        // Average row does not change.
+        $this->assertStringContainsString('0.75', $averagerow['sectionmark' . $firstsection->id]);
+        $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $firstsection->id]);
+        $this->assertStringContainsString('1.00', $averagerow['sectionmark' . $section2]);
+        $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $section2]);
+        $this->assertStringContainsString('5.00', $averagerow['sectionmark' . $section3]);
+        $this->assertStringContainsString('(1)', $averagerow['sectionmark' . $section3]);
+
     }
 }
