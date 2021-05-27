@@ -28,4 +28,4 @@ $string['markspersectionfilename'] = 'marks-per-section';
 $string['nosections'] = 'The quiz must contain at least two sections to display this report.';
 $string['pluginname'] = 'Marks per section';
 $string['privacy:metadata'] = 'The Quiz marks per section plugin does not store any personal data.';
-$string['sectionnoname'] = '(No section name)';
+$string['sectionnoname'] = '(Untitled section)';
