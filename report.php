@@ -49,7 +49,7 @@ class quiz_markspersection_report extends quiz_overview_report {
      * @param stdClass $course the course we are in.
      */
     public function display($quiz, $cm, $course) {
-        global $DB, $OUTPUT, $PAGE;
+        global $DB, $OUTPUT;
 
         list($currentgroup, $studentsjoins, $groupstudentsjoins, $allowedjoins) = $this->init(
                 'markspersection', 'quiz_markspersection_settings_form', $quiz, $cm, $course);

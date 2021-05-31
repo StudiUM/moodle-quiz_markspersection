@@ -63,11 +63,9 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
 
         $quba1 = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj1->get_context());
         $quba1->set_preferred_behaviour($quizobj1->get_quiz()->preferredbehaviour);
-        $cm1 = get_coursemodule_from_instance('quiz', $quiz1->id, $course->id);
 
         $quba2 = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj2->get_context());
         $quba2->set_preferred_behaviour($quizobj2->get_quiz()->preferredbehaviour);
-        $cm2 = get_coursemodule_from_instance('quiz', $quiz2->id, $course->id);
 
         // Create questions and add them to both quizzes.
         $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
@@ -98,21 +96,9 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         quiz_add_quiz_question($question6->id, $quiz2, 3, 3);
 
         // Case 1 : When there are no sections in the quiz.
-        $timenow = time();
-        $attempt = quiz_create_attempt($quizobj1, 1, false, $timenow, false, $user->id);
-        quiz_start_new_attempt($quizobj1, $quba1, $attempt, 1, $timenow);
-        quiz_attempt_save_started($quizobj1, $quba1, $attempt);
 
-        // Process some responses from the student.
-        $attemptobj = quiz_attempt::create($attempt->id);
-        $tosubmit = array(1 => array('answer' => 0),
-            2 => array('answer' => 0),
-            3 => array('answer' => 1),
-            4 => array('answer' => 0),
-            5 => array('answer' => 1),
-            6 => array('answer' => 1));
-        $attemptobj->process_submitted_actions($timenow, false, $tosubmit);
-        $attemptobj->process_finish($timenow, false);
+        // Submit answers to create attempt for user.
+        $attemptobj = $this->submitanswers($quizobj1, $quba1, $user, array(0, 0, 1, 0, 1, 1));
 
         // Check the data for the report - there is at least one section.
         $quizattemptsreport = quiz_attemptreport::create($attemptobj->get_attemptid());
@@ -137,21 +123,8 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         // Section 3.
         $structure->add_section_heading(3, 'Section 3');
 
-        $timenow = time();
-        $attempt = quiz_create_attempt($quizobj2, 1, false, $timenow, false, $user->id);
-        quiz_start_new_attempt($quizobj2, $quba2, $attempt, 1, $timenow);
-        quiz_attempt_save_started($quizobj2, $quba2, $attempt);
-
-        // Process some responses from the student.
-        $attemptobj = quiz_attempt::create($attempt->id);
-        $tosubmit = array(1 => array('answer' => 0),
-            2 => array('answer' => 0),
-            3 => array('answer' => 1),
-            4 => array('answer' => 0),
-            5 => array('answer' => 1),
-            6 => array('answer' => 1));
-        $attemptobj->process_submitted_actions($timenow, false, $tosubmit);
-        $attemptobj->process_finish($timenow, false);
+        // Submit answers to create attempt for user.
+        $attemptobj = $this->submitanswers($quizobj2, $quba2, $user, array(0, 0, 1, 0, 1, 1));
 
         // Check the data for the report.
         $quizattemptsreport = new quiz_markspersection_report();
@@ -235,34 +208,11 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         // Section 3.
         $section3 = $structure->add_section_heading(3, 'Section 3');
 
-        $timenow = time();
-        $attempt = quiz_create_attempt($quizobj1, 1, false, $timenow, false, $user->id);
-        quiz_start_new_attempt($quizobj1, $quba1, $attempt, 1, $timenow);
-        quiz_attempt_save_started($quizobj1, $quba1, $attempt);
+        // Submit answers to create attempt for user 1.
+        $this->submitanswers($quizobj1, $quba1, $user, array(0, 0, 1, 0, 1, 1));
 
-        // Process some responses from the student 1.
-        $attemptobj = quiz_attempt::create($attempt->id);
-        $tosubmit = array(1 => array('answer' => 0),
-            2 => array('answer' => 0),
-            3 => array('answer' => 1),
-            4 => array('answer' => 0),
-            5 => array('answer' => 1),
-            6 => array('answer' => 1));
-        $attemptobj->process_submitted_actions($timenow, false, $tosubmit);
-        $attemptobj->process_finish($timenow, false);
-
-        // Process some responses from the student 2.
-        $timenow = time();
-        $attempt = quiz_create_attempt($quizobj2, 1, false, $timenow, false, $user2->id);
-        quiz_start_new_attempt($quizobj2, $quba2, $attempt, 1, $timenow);
-        quiz_attempt_save_started($quizobj2, $quba2, $attempt);
-
-        $attemptobj = quiz_attempt::create($attempt->id);
-        $tosubmit = array(1 => array('answer' => 0),
-            2 => array('answer' => 1),
-            3 => array('answer' => 1));
-        $attemptobj->process_submitted_actions($timenow, false, $tosubmit);
-        $attemptobj->process_finish($timenow, false);
+        // Submit answers to create attempt for user 2.
+        $this->submitanswers($quizobj2, $quba2, $user2, array(0, 1, 1));
 
         // Check the data for the report.
         $context = context_module::instance($cm1->id);
@@ -326,5 +276,32 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $this->assertStringContainsString('5.00', $averagerow['sectionmark' . $section3]);
         $this->assertStringContainsString('(1)', $averagerow['sectionmark' . $section3]);
 
+    }
+
+    /**
+     * Create an attempt by submitting answers for a user.
+     *
+     * @param quiz $quizobj The quiz object for this attempt.
+     * @param question_usage_by_activity $quba1 The question usage object for this attempt.
+     * @param stdClass $user The user record object who submitted this attempt.
+     * @param array $answers The answers submitted by the user.
+     *
+     * @return quiz_attempt The attempt object created.
+     */
+    private function submitanswers($quizobj, $quba1, $user, $answers) {
+        $timenow = time();
+        $attempt = quiz_create_attempt($quizobj, 1, false, $timenow, false, $user->id);
+        quiz_start_new_attempt($quizobj, $quba1, $attempt, 1, $timenow);
+        quiz_attempt_save_started($quizobj, $quba1, $attempt);
+
+        // Process some responses from the student 1.
+        $attemptobj = quiz_attempt::create($attempt->id);
+        $tosubmit = array();
+        foreach ($answers as $ianswer => $answer) {
+            $tosubmit[$ianswer + 1] = array('answer' => $answer);
+        }
+        $attemptobj->process_submitted_actions($timenow, false, $tosubmit);
+        $attemptobj->process_finish($timenow, false);
+        return $attemptobj;
     }
 }
