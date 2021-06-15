@@ -39,9 +39,9 @@ require_once($CFG->dirroot . '/mod/quiz/report/markspersection/report.php');
  */
 class quiz_markspersection_table_testcase extends advanced_testcase {
     /**
-     * Test get_sections_marks function
+     * Test get_questions_in_section function
      */
-    public function test_get_sections_marks() {
+    public function test_get_questions_in_section() {
         $this->resetAfterTest();
 
         // Create a course.

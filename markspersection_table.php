@@ -96,7 +96,7 @@ class quiz_markspersection_table extends quiz_overview_table {
         if ($sumgrades !== null) {
             $sumgrades = quiz_format_question_grade($this->quiz, $sumgrades);
         } else {
-            return '-';
+            return get_string('notyetgraded', 'quiz');
         }
         return $sumgrades;
     }
@@ -118,7 +118,7 @@ class quiz_markspersection_table extends quiz_overview_table {
                 $colname = 'sectionmark' . $key;
 
                 // Calculate the sum of section marks for each attempt.
-                if (!isset($this->attemptsectionsmarks[$colname]) && $sumgrades !== null) {
+                if (!isset($this->attemptsectionsmarks[$colname])) {
                     $this->attemptsectionsmarks[$colname] = $sumgrades;
                 } else if ($sumgrades !== null) {
                     $this->attemptsectionsmarks[$colname] += $sumgrades;
@@ -175,7 +175,7 @@ class quiz_markspersection_table extends quiz_overview_table {
              WHERE {$qubaids->where()}";
         $attemptsids = $DB->get_records_sql($sql, $qubaids->from_where_params());
 
-        // Calcute the average of sections marks.
+        // Calculate the average of sections marks.
         $this->calculate_sections_sum(array_keys($attemptsids));
         if (!empty($this->attemptsectionsmarks) && !empty($this->attemptsids)) {
             array_walk_recursive($this->attemptsectionsmarks, function(&$item, $key) {

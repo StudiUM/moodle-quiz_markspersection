@@ -66,12 +66,13 @@ Feature: Basic use of the Marks per section report
       | activity   | name   | intro              | course | idnumber |
       | quiz       | Quiz 1 | Quiz 1 description | C1     | quiz1    |
     And the following "questions" exist:
-      | questioncategory | qtype       | name | questiontext    |
-      | Test questions   | truefalse   | TF1  | This is question 01 |
-      | Test questions   | truefalse   | TF2  | This is question 02 |
-      | Test questions   | truefalse   | TF3  | This is question 03 |
-      | Test questions   | truefalse   | TF4  | This is question 04 |
-      | Test questions   | truefalse   | TF5  | This is question 05 |
+      | questioncategory | qtype       | name | questiontext              | template |
+      | Test questions   | truefalse   | TF1  | This is question 01       |          |
+      | Test questions   | truefalse   | TF2  | This is question 02       |          |
+      | Test questions   | truefalse   | TF3  | This is question 03       |          |
+      | Test questions   | truefalse   | TF4  | This is question 04       |          |
+      | Test questions   | truefalse   | TF5  | This is question 05       |          |
+      | Test questions   | essay       | E1   | This is an essay question | plain    |
     And quiz "Quiz 1" contains the following questions:
       | question | page | maxmark |
       | TF1      | 1    | 1.5     |
@@ -79,25 +80,37 @@ Feature: Basic use of the Marks per section report
       | TF3      | 2    | 1.0     |
       | TF4      | 3    | 1.25    |
       | TF5      | 3    | 2.5     |
+      | E1       | 4    | 3       |
     And quiz "Quiz 1" contains the following sections:
       | heading   | firstslot | shuffle |
       | Section 1 | 1         | 0       |
       | Section 2 | 2         | 0       |
       | Section 3 | 4         | 0       |
+      | Section 4 | 6         | 0       |
     And user "student1" has attempted "Quiz 1" with responses:
-      | slot | response |
-      |   1  | True     |
-      |   2  | False    |
-      |   3  | False    |
-      |   4  | True     |
-      |   5  | True     |
+      | slot | response                |
+      |   1  | True                    |
+      |   2  | False                   |
+      |   3  | False                   |
+      |   4  | True                    |
+      |   5  | True                    |
     And user "student2" has attempted "Quiz 1" with responses:
       | slot | response |
       |   1  | True     |
       |   2  | True     |
-    And user "student3" has attempted "Quiz 1" with responses:
-      | slot | response |
-      |   1  | True     |
+
+    # Student 3 fills the essay, which is impossible with "has attempted [...] with responses" so we log in.
+    And I am on the "Quiz 1" "mod_quiz > View" page logged in as "student3"
+    And I press "Attempt quiz now"
+    And I click on "True" "radio"
+    And I click on "Next page" "button"
+    And I click on "Next page" "button"
+    And I click on "Next page" "button"
+    And I set the field with xpath "//textarea[contains(@class,'qtype_essay_plain')]" to "My essay."
+    And I follow "Finish attempt ..."
+    And I press "Submit all and finish"
+    And I click on "Submit all and finish" "button" in the "Confirmation" "dialogue"
+    And I log out
 
     # Basic check of the Marks per section report
     When I log in as "teacher1"
@@ -111,15 +124,22 @@ Feature: Basic use of the Marks per section report
     # Check section 2 column
     And "S1 Student1Review attempt" row "Section 2/3.00Sort by Section 2/3.00 Ascending" column of "attempts" table should contain "0.00"
     And "S2 Student2Review attempt" row "Section 2/3.00Sort by Section 2/3.00 Ascending" column of "attempts" table should contain "2.00"
-    And "S3 Student3Review attempt" row "Section 2/3.00Sort by Section 2/3.00 Ascending" column of "attempts" table should contain "-"
+    And "S3 Student3Review attempt" row "Section 2/3.00Sort by Section 2/3.00 Ascending" column of "attempts" table should contain "0.00"
     # Check section 3 column
     And "S1 Student1Review attempt" row "Section 3/3.75Sort by Section 3/3.75 Ascending" column of "attempts" table should contain "3.75"
-    And "S2 Student2Review attempt" row "Section 3/3.75Sort by Section 3/3.75 Ascending" column of "attempts" table should contain "-"
-    And "S3 Student3Review attempt" row "Section 3/3.75Sort by Section 3/3.75 Ascending" column of "attempts" table should contain "-"
+    And "S2 Student2Review attempt" row "Section 3/3.75Sort by Section 3/3.75 Ascending" column of "attempts" table should contain "0.00"
+    And "S3 Student3Review attempt" row "Section 3/3.75Sort by Section 3/3.75 Ascending" column of "attempts" table should contain "0.00"
+    # Check section 4 column
+    And "S1 Student1Review attempt" row "Section 4/3.00Sort by Section 4/3.00 Ascending" column of "attempts" table should contain "Not yet graded"
+    And "S2 Student2Review attempt" row "Section 4/3.00Sort by Section 4/3.00 Ascending" column of "attempts" table should contain "Not yet graded"
+    And "S3 Student3Review attempt" row "Section 4/3.00Sort by Section 4/3.00 Ascending" column of "attempts" table should contain "Not yet graded"
     # Check average for sections
     And "Overall average" row "Section 1/1.50Sort by Section 1/1.50 Ascending" column of "attempts" table should contain "1.50 (3)"
-    And "Overall average" row "Section 2/3.00Sort by Section 2/3.00 Ascending" column of "attempts" table should contain "1.00 (2)"
-    And "Overall average" row "Section 3/3.75Sort by Section 3/3.75 Ascending" column of "attempts" table should contain "3.75 (1)"
+    And "Overall average" row "Section 2/3.00Sort by Section 2/3.00 Ascending" column of "attempts" table should contain "0.67 (3)"
+    And "Overall average" row "Section 3/3.75Sort by Section 3/3.75 Ascending" column of "attempts" table should contain "1.25 (3)"
+    # Can't check easily if the column is empty, but if it does not have a . (as in 1.00) or a parenthesis (as in (1)) then it is most probably empty.
+    And "Overall average" row "Section 4/3Sort by Section 4/3 Ascending" column of "attempts" table should not contain "."
+    And "Overall average" row "Section 4/3Sort by Section 4/3 Ascending" column of "attempts" table should not contain "("
     # Check average with pagination
     And I set the field "Page size" to "1"
     And I press "Show report"
@@ -127,8 +147,8 @@ Feature: Basic use of the Marks per section report
     And I should not see "S2 Student2Review attempt"
     And I should not see "S3 Student3Review attempt"
     And "Overall average" row "Section 1/1.50Sort by Section 1/1.50 Ascending" column of "attempts" table should contain "1.50 (3)"
-    And "Overall average" row "Section 2/3.00Sort by Section 2/3.00 Ascending" column of "attempts" table should contain "1.00 (2)"
-    And "Overall average" row "Section 3/3.75Sort by Section 3/3.75 Ascending" column of "attempts" table should contain "3.75 (1)"
+    And "Overall average" row "Section 2/3.00Sort by Section 2/3.00 Ascending" column of "attempts" table should contain "0.67 (3)"
+    And "Overall average" row "Section 3/3.75Sort by Section 3/3.75 Ascending" column of "attempts" table should contain "1.25 (3)"
     And I set the field "Page size" to "30"
     And I press "Show report"
     # Sort sections

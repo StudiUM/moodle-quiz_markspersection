@@ -95,6 +95,10 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         quiz_add_quiz_question($question6->id, $quiz1, 3, 3);
         quiz_add_quiz_question($question6->id, $quiz2, 3, 3);
 
+        // Add an essay question in quiz 2 only.
+        $question7 = $questiongenerator->create_question('essay', null, ['category' => $cat->id]);
+        quiz_add_quiz_question($question7->id, $quiz2, 4, 1);
+
         // Case 1 : When there are no sections in the quiz.
 
         // Submit answers to create attempt for user.
@@ -123,8 +127,11 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         // Section 3.
         $structure->add_section_heading(3, 'Section 3');
 
+        // Section 4.
+        $structure->add_section_heading(4, 'Section 4');
+
         // Submit answers to create attempt for user.
-        $attemptobj = $this->submitanswers($quizobj2, $quba2, $user, array(0, 0, 1, 0, 1, 1));
+        $attemptobj = $this->submitanswers($quizobj2, $quba2, $user, array(0, 0, 1, 0, 1, 1, 'My essay.'));
 
         // Check the data for the report.
         $quizattemptsreport = new quiz_markspersection_report();
@@ -132,16 +139,19 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $quizattemptsreport = quiz_attemptreport::create($attemptobj->get_attemptid());
         $sectionsmarks = $quizattemptsreport->get_sections_marks();
         $sectionsmarks = array_values($sectionsmarks);
-        $this->assertCount(3, $sectionsmarks);
+        $this->assertCount(4, $sectionsmarks);
         $this->assertEquals('Section 1', $sectionsmarks[0]['heading']);
         $this->assertEquals('Section 2', $sectionsmarks[1]['heading']);
         $this->assertEquals('Section 3', $sectionsmarks[2]['heading']);
+        $this->assertEquals('Section 4', $sectionsmarks[3]['heading']);
         $this->assertEquals(0, $sectionsmarks[0]['sumgrades']);
         $this->assertEquals(1, $sectionsmarks[1]['sumgrades']);
         $this->assertEquals(5, $sectionsmarks[2]['sumgrades']);
+        $this->assertNull($sectionsmarks[3]['sumgrades']);
         $this->assertEquals(4, $sectionsmarks[0]['summaxgrades']);
         $this->assertEquals(2.75, $sectionsmarks[1]['summaxgrades']);
         $this->assertEquals(5, $sectionsmarks[2]['summaxgrades']);
+        $this->assertNull($sectionsmarks[3]['summaxgrades']);
     }
 
     /**
@@ -195,6 +205,9 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $question6 = $questiongenerator->create_question('truefalse', null, ['category' => $cat->id]);
         quiz_add_quiz_question($question6->id, $quiz1, 3, 3);
 
+        $question7 = $questiongenerator->create_question('essay', null, ['category' => $cat->id]);
+        quiz_add_quiz_question($question7->id, $quiz1, 4, 3);
+
         // Create the structure and sections in the quiz for student 1.
         $structure = \mod_quiz\structure::create_for_quiz($quizobj1);
         // Default section.
@@ -208,8 +221,11 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         // Section 3.
         $section3 = $structure->add_section_heading(3, 'Section 3');
 
+        // Section 4.
+        $section4 = $structure->add_section_heading(4, 'Section 4');
+
         // Submit answers to create attempt for user 1.
-        $this->submitanswers($quizobj1, $quba1, $user, array(0, 0, 1, 0, 1, 1));
+        $this->submitanswers($quizobj1, $quba1, $user, array(0, 0, 1, 0, 1, 1, 'My essay.'));
 
         // Submit answers to create attempt for user 2.
         $this->submitanswers($quizobj2, $quba2, $user2, array(0, 1, 1));
@@ -249,8 +265,9 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $firstsection->id]);
         $this->assertStringContainsString('1.00', $averagerow['sectionmark' . $section2]);
         $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $section2]);
-        $this->assertStringContainsString('5.00', $averagerow['sectionmark' . $section3]);
-        $this->assertStringContainsString('(1)', $averagerow['sectionmark' . $section3]);
+        $this->assertStringContainsString('2.50', $averagerow['sectionmark' . $section3]);
+        $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $section3]);
+        $this->assertEmpty($averagerow['sectionmark' . $section4]);
 
         // Check the calculation of averages when display one per page.
         // Load the required questions.
@@ -273,8 +290,9 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $firstsection->id]);
         $this->assertStringContainsString('1.00', $averagerow['sectionmark' . $section2]);
         $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $section2]);
-        $this->assertStringContainsString('5.00', $averagerow['sectionmark' . $section3]);
-        $this->assertStringContainsString('(1)', $averagerow['sectionmark' . $section3]);
+        $this->assertStringContainsString('2.50', $averagerow['sectionmark' . $section3]);
+        $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $section3]);
+        $this->assertEmpty($averagerow['sectionmark' . $section4]);
 
     }
 
@@ -298,7 +316,11 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $attemptobj = quiz_attempt::create($attempt->id);
         $tosubmit = array();
         foreach ($answers as $ianswer => $answer) {
-            $tosubmit[$ianswer + 1] = array('answer' => $answer);
+            if (is_numeric($answer)) {
+                $tosubmit[$ianswer + 1] = array('answer' => $answer);
+            } else {
+                $tosubmit[$ianswer + 1] = array('answer' => $answer, 'answerformat' => FORMAT_PLAIN);
+            }
         }
         $attemptobj->process_submitted_actions($timenow, false, $tosubmit);
         $attemptobj->process_finish($timenow, false);
