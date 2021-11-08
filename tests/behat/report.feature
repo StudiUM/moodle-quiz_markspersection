@@ -36,9 +36,7 @@ Feature: Basic use of the Marks per section report
       |   1  | True     |
       |   2  | False    |
     # Basic check of the Marks per section report
-    When I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I follow "Quiz 1"
+    When I am on the "Quiz 1" "quiz activity" page logged in as teacher1
     And I navigate to "Results > Marks per section" in current page administration
     Then I should see "The quiz must contain at least two sections to display this report."
 
@@ -113,9 +111,7 @@ Feature: Basic use of the Marks per section report
     And I log out
 
     # Basic check of the Marks per section report
-    When I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I follow "Quiz 1"
+    When I am on the "Quiz 1" "quiz activity" page logged in as teacher1
     And I navigate to "Results > Marks per section" in current page administration
     # Check section 1 column
     Then "S1 Student1Review attempt" row "Section 1/1.50Sort by Section 1/1.50 Ascending" column of "attempts" table should contain "1.50"
