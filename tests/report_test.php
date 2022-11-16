@@ -23,6 +23,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace quiz_markspersection;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
@@ -30,7 +32,7 @@ require_once($CFG->dirroot . '/mod/quiz/report/default.php');
 require_once($CFG->dirroot . '/mod/quiz/report/reportlib.php');
 require_once($CFG->dirroot . '/mod/quiz/report/markspersection/report.php');
 
-use \quiz_markspersection\quiz_attemptreport;
+use quiz_markspersection\quiz_attemptreport;
 
 /**
  * Tests for the quiz marks per section report.
@@ -38,8 +40,9 @@ use \quiz_markspersection\quiz_attemptreport;
  * @copyright 2021 Université de Montréal
  * @author    Marie-Eve Lévesque <marie-eve.levesque.8@umontreal.ca>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers \quiz_markspersection\quiz_attemptreport
  */
-class quiz_markspersection_report_testcase extends advanced_testcase {
+class report_test extends \advanced_testcase {
     /**
      * Test get_sections_marks function
      */
@@ -58,13 +61,13 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $quiz2 = $quizgenerator->create_instance(array('course' => $course->id, 'questionsperpage' => 0,
             'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback'));
 
-        $quizobj1 = quiz::create($quiz1->id, $user->id);
-        $quizobj2 = quiz::create($quiz2->id, $user->id);
+        $quizobj1 = \quiz::create($quiz1->id, $user->id);
+        $quizobj2 = \quiz::create($quiz2->id, $user->id);
 
-        $quba1 = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj1->get_context());
+        $quba1 = \question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj1->get_context());
         $quba1->set_preferred_behaviour($quizobj1->get_quiz()->preferredbehaviour);
 
-        $quba2 = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj2->get_context());
+        $quba2 = \question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj2->get_context());
         $quba2->set_preferred_behaviour($quizobj2->get_quiz()->preferredbehaviour);
 
         // Create questions and add them to both quizzes.
@@ -134,7 +137,7 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $attemptobj = $this->submitanswers($quizobj2, $quba2, $user, array(0, 0, 1, 0, 1, 1, 'My essay.'));
 
         // Check the data for the report.
-        $quizattemptsreport = new quiz_markspersection_report();
+        $quizattemptsreport = new \quiz_markspersection_report();
 
         $quizattemptsreport = quiz_attemptreport::create($attemptobj->get_attemptid());
         $sectionsmarks = $quizattemptsreport->get_sections_marks();
@@ -173,14 +176,14 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $quiz1 = $quizgenerator->create_instance(array('course' => $course->id, 'questionsperpage' => 0,
             'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback'));
 
-        $quizobj1 = quiz::create($quiz1->id, $user->id);
-        $quizobj2 = quiz::create($quiz1->id, $user2->id);
+        $quizobj1 = \quiz::create($quiz1->id, $user->id);
+        $quizobj2 = \quiz::create($quiz1->id, $user2->id);
 
-        $quba1 = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj1->get_context());
+        $quba1 = \question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj1->get_context());
         $quba1->set_preferred_behaviour($quizobj1->get_quiz()->preferredbehaviour);
         $cm1 = get_coursemodule_from_instance('quiz', $quiz1->id, $course->id);
 
-        $quba2 = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj2->get_context());
+        $quba2 = \question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj2->get_context());
         $quba2->set_preferred_behaviour($quizobj2->get_quiz()->preferredbehaviour);
 
         // Create questions and add them to both quizzes.
@@ -231,7 +234,7 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $this->submitanswers($quizobj2, $quba2, $user2, array(0, 1, 1));
 
         // Check the data for the report.
-        $context = context_module::instance($cm1->id);
+        $context = \context_module::instance($cm1->id);
         $cm = get_coursemodule_from_id('quiz', $cm1->id);
         $qmsubselect = quiz_report_qm_filter_select($quiz1);
         $studentsjoins = get_enrolled_with_capabilities_join($context, '',
@@ -239,20 +242,20 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         $empty = new \core\dml\sql_join();
 
         // Set the options.
-        $reportoptions = new quiz_markspersection_options('overview', $quiz1, $cm, null);
-        $reportoptions->attempts = quiz_attempts_report::ENROLLED_ALL;
+        $reportoptions = new \quiz_markspersection_options('overview', $quiz1, $cm, null);
+        $reportoptions->attempts = \quiz_attempts_report::ENROLLED_ALL;
         $reportoptions->onlygraded = true;
-        $reportoptions->states = array(quiz_attempt::IN_PROGRESS, quiz_attempt::OVERDUE, quiz_attempt::FINISHED);
+        $reportoptions->states = array(\quiz_attempt::IN_PROGRESS, \quiz_attempt::OVERDUE, \quiz_attempt::FINISHED);
 
         // Load the required questions.
         $questions = quiz_report_get_significant_questions($quiz1);
 
-        $table = new quiz_markspersection_table($quiz1, $context, $qmsubselect, $reportoptions,
+        $table = new \quiz_markspersection_table($quiz1, $context, $qmsubselect, $reportoptions,
         $empty, $studentsjoins, $questions, null);
         $table->download = null;
         $table->define_columns(array('fullname'));
         $table->sortable(true, 'uniqueid');
-        $table->define_baseurl(new moodle_url('/mod/quiz/report.php'));
+        $table->define_baseurl(new \moodle_url('/mod/quiz/report.php'));
         $table->setup();
 
         // Run the query.
@@ -273,12 +276,12 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         // Load the required questions.
         $questions = quiz_report_get_significant_questions($quiz1);
 
-        $table = new quiz_markspersection_table($quiz1, $context, $qmsubselect, $reportoptions,
+        $table = new \quiz_markspersection_table($quiz1, $context, $qmsubselect, $reportoptions,
         $empty, $studentsjoins, $questions, null);
         $table->download = null;
         $table->define_columns(array('fullname'));
         $table->sortable(true, 'uniqueid');
-        $table->define_baseurl(new moodle_url('/mod/quiz/report.php'));
+        $table->define_baseurl(new \moodle_url('/mod/quiz/report.php'));
         $table->setup();
 
         // Run the query with 1 result per page.
@@ -299,12 +302,12 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
     /**
      * Create an attempt by submitting answers for a user.
      *
-     * @param quiz $quizobj The quiz object for this attempt.
-     * @param question_usage_by_activity $quba1 The question usage object for this attempt.
-     * @param stdClass $user The user record object who submitted this attempt.
+     * @param \quiz $quizobj The quiz object for this attempt.
+     * @param \question_usage_by_activity $quba1 The question usage object for this attempt.
+     * @param \stdClass $user The user record object who submitted this attempt.
      * @param array $answers The answers submitted by the user.
      *
-     * @return quiz_attempt The attempt object created.
+     * @return \quiz_attempt The attempt object created.
      */
     private function submitanswers($quizobj, $quba1, $user, $answers) {
         $timenow = time();
@@ -313,7 +316,7 @@ class quiz_markspersection_report_testcase extends advanced_testcase {
         quiz_attempt_save_started($quizobj, $quba1, $attempt);
 
         // Process some responses from the student 1.
-        $attemptobj = quiz_attempt::create($attempt->id);
+        $attemptobj = \quiz_attempt::create($attempt->id);
         $tosubmit = array();
         foreach ($answers as $ianswer => $answer) {
             if (is_numeric($answer)) {

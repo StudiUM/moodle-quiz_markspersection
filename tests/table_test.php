@@ -23,6 +23,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace quiz_markspersection;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
@@ -36,8 +38,9 @@ require_once($CFG->dirroot . '/mod/quiz/report/markspersection/report.php');
  * @copyright 2021 Université de Montréal
  * @author    Marie-Eve Lévesque <marie-eve.levesque.8@umontreal.ca>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers \quiz_markspersection\quiz_attemptreport
  */
-class quiz_markspersection_table_testcase extends advanced_testcase {
+class table_test extends \advanced_testcase {
     /**
      * Test get_questions_in_section function
      */
@@ -53,10 +56,10 @@ class quiz_markspersection_table_testcase extends advanced_testcase {
         $quiz1 = $quizgenerator->create_instance(array('course' => $course->id, 'questionsperpage' => 0,
             'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback'));
 
-        $quizobj1 = quiz::create($quiz1->id, $user->id);
+        $quizobj1 = \quiz::create($quiz1->id, $user->id);
         $context1 = $quizobj1->get_context();
 
-        $quba1 = question_engine::make_questions_usage_by_activity('mod_quiz', $context1);
+        $quba1 = \question_engine::make_questions_usage_by_activity('mod_quiz', $context1);
         $quba1->set_preferred_behaviour($quizobj1->get_quiz()->preferredbehaviour);
         $cm1 = get_coursemodule_from_instance('quiz', $quiz1->id, $course->id);
 
@@ -108,13 +111,13 @@ class quiz_markspersection_table_testcase extends advanced_testcase {
         $empty = new \core\dml\sql_join();
 
         // Set the options.
-        $reportoptions = new quiz_markspersection_options('markspersection', $quiz1, $cm1, null);
-        $reportoptions->attempts = quiz_attempts_report::ENROLLED_ALL;
+        $reportoptions = new \quiz_markspersection_options('markspersection', $quiz1, $cm1, null);
+        $reportoptions->attempts = \quiz_attempts_report::ENROLLED_ALL;
         $reportoptions->onlygraded = true;
-        $reportoptions->states = array(quiz_attempt::IN_PROGRESS, quiz_attempt::OVERDUE, quiz_attempt::FINISHED);
+        $reportoptions->states = array(\quiz_attempt::IN_PROGRESS, \quiz_attempt::OVERDUE, \quiz_attempt::FINISHED);
 
         // Initialise the table class.
-        $table = new quiz_markspersection_table($quiz1, $quizobj1->get_context(), $qmsubselect, $reportoptions,
+        $table = new \quiz_markspersection_table($quiz1, $quizobj1->get_context(), $qmsubselect, $reportoptions,
             $empty, $studentsjoins,
             array(1 => $question1, 2 => $question2, 3 => $question3, 4 => $question4, 5 => $question5, 6 => $question6),
             null);

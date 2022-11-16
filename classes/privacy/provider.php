@@ -25,8 +25,6 @@
 
 namespace quiz_markspersection\privacy;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Privacy Subsystem for quiz_markspersection implementing null_provider.
  *

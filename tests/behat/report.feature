@@ -4,44 +4,7 @@ Feature: Basic use of the Marks per section report
   As a teacher
   I need to use the Marks per section report
 
-  @javascript
-  Scenario: Using the Marks per section report with one section
-    Given the following "users" exist:
-      | username | firstname | lastname | email                | idnumber |
-      | teacher1 | T1        | Teacher1 | teacher1@example.com | T1000    |
-      | student1 | S1        | Student1 | student1@example.com | S1000    |
-    And the following "courses" exist:
-      | fullname | shortname | category |
-      | Course 1 | C1        | 0        |
-    And the following "course enrolments" exist:
-      | user     | course | role           |
-      | teacher1 | C1     | editingteacher |
-      | student1 | C1     | student        |
-    And the following "question categories" exist:
-      | contextlevel | reference | name           |
-      | Course       | C1        | Test questions |
-    And the following "activities" exist:
-      | activity   | name   | intro              | course | idnumber |
-      | quiz       | Quiz 1 | Quiz 1 description | C1     | quiz1    |
-    And the following "questions" exist:
-      | questioncategory | qtype       | name | questiontext    |
-      | Test questions   | truefalse   | TF1  | This is question 01 |
-      | Test questions   | truefalse   | TF2  | This is question 02 |
-    And quiz "Quiz 1" contains the following questions:
-      | question | page | maxmark |
-      | TF1      | 1    | 1.5     |
-      | TF2      | 1    | 2.0     |
-    And user "student1" has attempted "Quiz 1" with responses:
-      | slot | response |
-      |   1  | True     |
-      |   2  | False    |
-    # Basic check of the Marks per section report
-    When I am on the "Quiz 1" "quiz activity" page logged in as teacher1
-    And I navigate to "Results > Marks per section" in current page administration
-    Then I should see "The quiz must contain at least two sections to display this report."
-
-  @javascript
-  Scenario: Using the Marks per section report with at least two sections
+  Background:
     Given the following "users" exist:
       | username | firstname | lastname | email                | idnumber |
       | teacher1 | T1        | Teacher1 | teacher1@example.com | T1000    |
@@ -79,12 +42,6 @@ Feature: Basic use of the Marks per section report
       | TF4      | 3    | 1.25    |
       | TF5      | 3    | 2.5     |
       | E1       | 4    | 3       |
-    And quiz "Quiz 1" contains the following sections:
-      | heading   | firstslot | shuffle |
-      | Section 1 | 1         | 0       |
-      | Section 2 | 2         | 0       |
-      | Section 3 | 4         | 0       |
-      | Section 4 | 6         | 0       |
     And user "student1" has attempted "Quiz 1" with responses:
       | slot | response                |
       |   1  | True                    |
@@ -97,8 +54,23 @@ Feature: Basic use of the Marks per section report
       |   1  | True     |
       |   2  | True     |
 
+  @javascript
+  Scenario: Using the Marks per section report with one section
+    # Basic check of the Marks per section report
+    When I am on the "Quiz 1" "quiz activity" page logged in as "teacher1"
+    And I navigate to "Results > Marks per section" in current page administration
+    Then I should see "The quiz must contain at least two sections to display this report."
+
+  @javascript
+  Scenario: Using the Marks per section report with at least two sections
+    Given quiz "Quiz 1" contains the following sections:
+      | heading   | firstslot | shuffle |
+      | Section 1 | 1         | 0       |
+      | Section 2 | 2         | 0       |
+      | Section 3 | 4         | 0       |
+      | Section 4 | 6         | 0       |
     # Student 3 fills the essay, which is impossible with "has attempted [...] with responses" so we log in.
-    And I am on the "Quiz 1" "mod_quiz > View" page logged in as "student3"
+    When I am on the "Quiz 1" "mod_quiz > View" page logged in as "student3"
     And I press "Attempt quiz now"
     And I click on "True" "radio"
     And I click on "Next page" "button"
@@ -111,7 +83,7 @@ Feature: Basic use of the Marks per section report
     And I log out
 
     # Basic check of the Marks per section report
-    When I am on the "Quiz 1" "quiz activity" page logged in as teacher1
+    When I am on the "Quiz 1" "quiz activity" page logged in as "teacher1"
     And I navigate to "Results > Marks per section" in current page administration
     # Check section 1 column
     Then "S1 Student1Review attempt" row "Section 1/1.50Sort by Section 1/1.50 Ascending" column of "attempts" table should contain "1.50"
