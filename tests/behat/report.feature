@@ -58,7 +58,8 @@ Feature: Basic use of the Marks per section report
   Scenario: Using the Marks per section report with one section
     # Basic check of the Marks per section report
     When I am on the "Quiz 1" "quiz activity" page logged in as "teacher1"
-    And I navigate to "Results > Marks per section" in current page administration
+    And I navigate to "Results" in current page administration
+    And I set the field "jump" to "Marks per section"
     Then I should see "The quiz must contain at least two sections to display this report."
 
   @javascript
@@ -71,7 +72,7 @@ Feature: Basic use of the Marks per section report
       | Section 4 | 6         | 0       |
     # Student 3 fills the essay, which is impossible with "has attempted [...] with responses" so we log in.
     When I am on the "Quiz 1" "mod_quiz > View" page logged in as "student3"
-    And I press "Attempt quiz now"
+    And I press "Attempt quiz"
     And I click on "True" "radio"
     And I click on "Next page" "button"
     And I click on "Next page" "button"
@@ -84,7 +85,8 @@ Feature: Basic use of the Marks per section report
 
     # Basic check of the Marks per section report
     When I am on the "Quiz 1" "quiz activity" page logged in as "teacher1"
-    And I navigate to "Results > Marks per section" in current page administration
+    And I navigate to "Results" in current page administration
+    And I set the field "jump" to "Marks per section"
     # Check section 1 column
     Then "S1 Student1Review attempt" row "Section 1/1.50Sort by Section 1/1.50 Ascending" column of "attempts" table should contain "1.50"
     And "S2 Student2Review attempt" row "Section 1/1.50Sort by Section 1/1.50 Ascending" column of "attempts" table should contain "1.50"
