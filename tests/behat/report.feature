@@ -80,7 +80,7 @@ Feature: Basic use of the Marks per section report
     And I set the field with xpath "//textarea[contains(@class,'qtype_essay_plain')]" to "My essay."
     And I follow "Finish attempt ..."
     And I press "Submit all and finish"
-    And I click on "Submit all and finish" "button" in the "Confirmation" "dialogue"
+    And I click on "Submit all and finish" "button" in the "Submit all your answers and finish?" "dialogue"
     And I log out
 
     # Basic check of the Marks per section report
