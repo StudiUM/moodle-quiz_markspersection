@@ -23,9 +23,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-require_once($CFG->dirroot . '/mod/quiz/report/attemptsreport_form.php');
+use mod_quiz\local\reports\attempts_report_options_form;
 
 /**
  * Quiz marks per section report settings form.
@@ -34,6 +32,6 @@ require_once($CFG->dirroot . '/mod/quiz/report/attemptsreport_form.php');
  * @author    Marie-Eve Lévesque <marie-eve.levesque.8@umontreal.ca>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class quiz_markspersection_settings_form extends mod_quiz_attempts_report_form {
+class quiz_markspersection_settings_form extends attempts_report_options_form {
 
 }

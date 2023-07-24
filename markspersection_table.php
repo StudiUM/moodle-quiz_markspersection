@@ -24,9 +24,6 @@
  */
 
 
-defined('MOODLE_INTERNAL') || die();
-
-require_once($CFG->dirroot . '/mod/quiz/report/attemptsreport_table.php');
 use quiz_markspersection\quiz_attemptreport;
 
 /**
