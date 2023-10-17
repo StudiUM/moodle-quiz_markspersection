@@ -270,7 +270,7 @@ class report_test extends \advanced_testcase {
         $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $section2]);
         $this->assertStringContainsString('2.50', $averagerow['sectionmark' . $section3]);
         $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $section3]);
-        $this->assertEmpty($averagerow['sectionmark' . $section4]);
+        $this->assertStringContainsString('0.00', $averagerow['sectionmark' . $section4]);
 
         // Check the calculation of averages when display one per page.
         // Load the required questions.
@@ -295,7 +295,7 @@ class report_test extends \advanced_testcase {
         $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $section2]);
         $this->assertStringContainsString('2.50', $averagerow['sectionmark' . $section3]);
         $this->assertStringContainsString('(2)', $averagerow['sectionmark' . $section3]);
-        $this->assertEmpty($averagerow['sectionmark' . $section4]);
+        $this->assertStringContainsString('0.00', $averagerow['sectionmark' . $section4]);
 
     }
 

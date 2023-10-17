@@ -100,8 +100,8 @@ Feature: Basic use of the Marks per section report
     And "S2 Student2Review attempt" row "Section 3/3.75Sort by Section 3/3.75 Ascending" column of "attempts" table should contain "0.00"
     And "S3 Student3Review attempt" row "Section 3/3.75Sort by Section 3/3.75 Ascending" column of "attempts" table should contain "0.00"
     # Check section 4 column
-    And "S1 Student1Review attempt" row "Section 4/3.00Sort by Section 4/3.00 Ascending" column of "attempts" table should contain "Not yet graded"
-    And "S2 Student2Review attempt" row "Section 4/3.00Sort by Section 4/3.00 Ascending" column of "attempts" table should contain "Not yet graded"
+    And "S1 Student1Review attempt" row "Section 4/3.00Sort by Section 4/3.00 Ascending" column of "attempts" table should contain "0.00"
+    And "S2 Student2Review attempt" row "Section 4/3.00Sort by Section 4/3.00 Ascending" column of "attempts" table should contain "0.00"
     And "S3 Student3Review attempt" row "Section 4/3.00Sort by Section 4/3.00 Ascending" column of "attempts" table should contain "Not yet graded"
     # Check average for sections
     And "Overall average" row "Section 1/1.50Sort by Section 1/1.50 Ascending" column of "attempts" table should contain "1.50 (3)"

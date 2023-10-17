@@ -62,8 +62,9 @@ class quiz_attemptreport extends \quiz_attempt {
                 if (isset($sectionsmarks[$sectionid]) && !is_null($sectionsmarks[$sectionid]['sumgrades'])) {
                     $mark = $this->quba->get_question_mark($slot);
                     if (is_null($mark) && $this->quba->get_question($slot)->qtype->is_manual_graded()) {
-                        $sectionsmarks[$sectionid]['sumgrades'] = null;
-                        $sectionsmarks[$sectionid]['summaxgrades'] = null;
+                        $slotmark = is_null($this->quba->get_question_attempt($slot)->get_response_summary()) ? 0 : null;
+                        $sectionsmarks[$sectionid]['sumgrades'] = $slotmark;
+                        $sectionsmarks[$sectionid]['summaxgrades'] = $slotmark;
                     } else {
                         if (!is_null($mark)) {
                             $sectionsmarks[$sectionid]['sumgrades'] += $mark;

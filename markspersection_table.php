@@ -121,6 +121,9 @@ class quiz_markspersection_table extends quiz_overview_table {
                 if (!isset($this->attemptsectionsmarks[$colname])) {
                     $this->attemptsectionsmarks[$colname] = $sumgrades;
                 } else if ($sumgrades !== null) {
+                    if (!is_numeric($this->attemptsectionsmarks[$colname])) {
+                        $this->attemptsectionsmarks[$colname] = 0;
+                    }
                     $this->attemptsectionsmarks[$colname] += $sumgrades;
                 }
                 if ($sumgrades !== null) {
