@@ -126,7 +126,9 @@ class quiz_markspersection_table extends quiz_overview_table {
                     }
                     $this->attemptsectionsmarks[$colname] += $sumgrades;
                 }
-                if ($sumgrades !== null) {
+                // Do not add the same attempt to a section.
+                if ($sumgrades !== null &&
+                    (!isset($this->attemptsids[$colname]) || !in_array($attemptid, $this->attemptsids[$colname]))) {
                     $this->attemptsids[$colname][] = $attemptid;
                 }
             }
