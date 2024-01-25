@@ -23,9 +23,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-require_once($CFG->dirroot . '/mod/quiz/report/attemptsreport_options.php');
+use mod_quiz\local\reports\attempts_report;
+use mod_quiz\local\reports\attempts_report_options;
 
 /**
  * Class to store the options for a quiz_markspersection_report.
@@ -34,7 +33,7 @@ require_once($CFG->dirroot . '/mod/quiz/report/attemptsreport_options.php');
  * @author    Marie-Eve Lévesque <marie-eve.levesque.8@umontreal.ca>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class quiz_markspersection_options extends mod_quiz_attempts_report_options {
+class quiz_markspersection_options extends attempts_report_options {
 
     /** @var bool whether to show only attempt that need regrading.
      * This variable is necessary to stay compatible with quiz_overview_options even if we do not extend it. */
@@ -53,7 +52,7 @@ class quiz_markspersection_options extends mod_quiz_attempts_report_options {
         // We only want to show the checkbox to delete attempts
         // if the user has permissions and if the report mode is showing attempts.
         $this->checkboxcolumn = has_any_capability(
-                array('mod/quiz:deleteattempts'), context_module::instance($this->cm->id))
-                && ($this->attempts != quiz_attempts_report::ENROLLED_WITHOUT);
+                ['mod/quiz:deleteattempts'], context_module::instance($this->cm->id))
+                && ($this->attempts != attempts_report::ENROLLED_WITHOUT);
     }
 }

@@ -25,8 +25,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version  = 2021110900;
-$plugin->requires = 2021051704;
+$plugin->version  = 2024012500;
+$plugin->requires = 2023100400;
 $plugin->component = 'quiz_markspersection';
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.0.3 (Build 2021110900)';
+$plugin->release   = '1.0.4 (Build 2024012500)';

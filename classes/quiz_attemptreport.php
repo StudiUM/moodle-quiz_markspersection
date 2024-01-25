@@ -25,6 +25,9 @@
 
 namespace quiz_markspersection;
 
+use mod_quiz\access_manager;
+use mod_quiz\quiz_attempt;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
@@ -36,7 +39,7 @@ global $CFG;
  * @author    Marie-Eve Lévesque <marie-eve.levesque.8@umontreal.ca>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class quiz_attemptreport extends \quiz_attempt {
+class quiz_attemptreport extends quiz_attempt {
 
     /** @var array Already calculated sections marks, stored in this variable for further use (to avoid recalculation). */
     private $sectionmarks = null;
@@ -97,7 +100,7 @@ class quiz_attemptreport extends \quiz_attempt {
      * @return quiz_attempt the new quiz_attempt object
      */
     public static function create($attemptid) {
-        return self::create_helper(array('id' => $attemptid));
+        return self::create_helper(['id' => $attemptid]);
     }
 
     /**
@@ -110,8 +113,8 @@ class quiz_attemptreport extends \quiz_attempt {
         global $DB;
 
         $attempt = $DB->get_record('quiz_attempts', $conditions, '*', MUST_EXIST);
-        $quiz = \quiz_access_manager::load_quiz_and_settings($attempt->quiz);
-        $course = $DB->get_record('course', array('id' => $quiz->course), '*', MUST_EXIST);
+        $quiz = access_manager::load_quiz_and_settings($attempt->quiz);
+        $course = $DB->get_record('course', ['id' => $quiz->course], '*', MUST_EXIST);
         $cm = get_coursemodule_from_instance('quiz', $quiz->id, $course->id, false, MUST_EXIST);
 
         // Update quiz with override information.

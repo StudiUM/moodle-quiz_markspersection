@@ -28,11 +28,12 @@ namespace quiz_markspersection;
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
-require_once($CFG->dirroot . '/mod/quiz/report/default.php');
 require_once($CFG->dirroot . '/mod/quiz/report/reportlib.php');
 require_once($CFG->dirroot . '/mod/quiz/report/markspersection/report.php');
 
-use quiz_markspersection\quiz_attemptreport;
+use mod_quiz\local\reports\attempts_report;
+use mod_quiz\quiz_attempt;
+use mod_quiz\quiz_settings;
 
 /**
  * Tests for the quiz marks per section report.
@@ -56,13 +57,13 @@ class report_test extends \advanced_testcase {
         // Create 2 quizzes : one without sections and one with sections.
         $quizgenerator = $this->getDataGenerator()->get_plugin_generator('mod_quiz');
 
-        $quiz1 = $quizgenerator->create_instance(array('course' => $course->id, 'questionsperpage' => 0,
-            'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback'));
-        $quiz2 = $quizgenerator->create_instance(array('course' => $course->id, 'questionsperpage' => 0,
-            'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback'));
+        $quiz1 = $quizgenerator->create_instance(['course' => $course->id, 'questionsperpage' => 0,
+            'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback']);
+        $quiz2 = $quizgenerator->create_instance(['course' => $course->id, 'questionsperpage' => 0,
+            'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback']);
 
-        $quizobj1 = \quiz::create($quiz1->id, $user->id);
-        $quizobj2 = \quiz::create($quiz2->id, $user->id);
+        $quizobj1 = quiz_settings::create($quiz1->id, $user->id);
+        $quizobj2 = quiz_settings::create($quiz2->id, $user->id);
 
         $quba1 = \question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj1->get_context());
         $quba1->set_preferred_behaviour($quizobj1->get_quiz()->preferredbehaviour);
@@ -105,7 +106,7 @@ class report_test extends \advanced_testcase {
         // Case 1 : When there are no sections in the quiz.
 
         // Submit answers to create attempt for user.
-        $attemptobj = $this->submitanswers($quizobj1, $quba1, $user, array(0, 0, 1, 0, 1, 1));
+        $attemptobj = $this->submitanswers($quizobj1, $quba1, $user, [0, 0, 1, 0, 1, 1]);
 
         // Check the data for the report - there is at least one section.
         $quizattemptsreport = quiz_attemptreport::create($attemptobj->get_attemptid());
@@ -134,7 +135,7 @@ class report_test extends \advanced_testcase {
         $structure->add_section_heading(4, 'Section 4');
 
         // Submit answers to create attempt for user.
-        $attemptobj = $this->submitanswers($quizobj2, $quba2, $user, array(0, 0, 1, 0, 1, 1, 'My essay.'));
+        $attemptobj = $this->submitanswers($quizobj2, $quba2, $user, [0, 0, 1, 0, 1, 1, 'My essay.']);
 
         // Check the data for the report.
         $quizattemptsreport = new \quiz_markspersection_report();
@@ -173,11 +174,11 @@ class report_test extends \advanced_testcase {
         // Create 2 quizzes : one without sections and one with sections.
         $quizgenerator = $this->getDataGenerator()->get_plugin_generator('mod_quiz');
 
-        $quiz1 = $quizgenerator->create_instance(array('course' => $course->id, 'questionsperpage' => 0,
-            'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback'));
+        $quiz1 = $quizgenerator->create_instance(['course' => $course->id, 'questionsperpage' => 0,
+            'grade' => 100.0, 'sumgrades' => 2, 'preferredbehaviour' => 'immediatefeedback']);
 
-        $quizobj1 = \quiz::create($quiz1->id, $user->id);
-        $quizobj2 = \quiz::create($quiz1->id, $user2->id);
+        $quizobj1 = quiz_settings::create($quiz1->id, $user->id);
+        $quizobj2 = quiz_settings::create($quiz1->id, $user2->id);
 
         $quba1 = \question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj1->get_context());
         $quba1->set_preferred_behaviour($quizobj1->get_quiz()->preferredbehaviour);
@@ -228,24 +229,24 @@ class report_test extends \advanced_testcase {
         $section4 = $structure->add_section_heading(4, 'Section 4');
 
         // Submit answers to create attempt for user 1.
-        $this->submitanswers($quizobj1, $quba1, $user, array(0, 0, 1, 0, 1, 1, 'My essay.'));
+        $this->submitanswers($quizobj1, $quba1, $user, [0, 0, 1, 0, 1, 1, 'My essay.']);
 
         // Submit answers to create attempt for user 2.
-        $this->submitanswers($quizobj2, $quba2, $user2, array(0, 1, 1));
+        $this->submitanswers($quizobj2, $quba2, $user2, [0, 1, 1]);
 
         // Check the data for the report.
         $context = \context_module::instance($cm1->id);
         $cm = get_coursemodule_from_id('quiz', $cm1->id);
         $qmsubselect = quiz_report_qm_filter_select($quiz1);
         $studentsjoins = get_enrolled_with_capabilities_join($context, '',
-                array('mod/quiz:attempt', 'mod/quiz:reviewmyattempts'));
+                ['mod/quiz:attempt', 'mod/quiz:reviewmyattempts']);
         $empty = new \core\dml\sql_join();
 
         // Set the options.
         $reportoptions = new \quiz_markspersection_options('overview', $quiz1, $cm, null);
-        $reportoptions->attempts = \quiz_attempts_report::ENROLLED_ALL;
+        $reportoptions->attempts = attempts_report::ENROLLED_ALL;
         $reportoptions->onlygraded = true;
-        $reportoptions->states = array(\quiz_attempt::IN_PROGRESS, \quiz_attempt::OVERDUE, \quiz_attempt::FINISHED);
+        $reportoptions->states = [quiz_attempt::IN_PROGRESS, quiz_attempt::OVERDUE, quiz_attempt::FINISHED];
 
         // Load the required questions.
         $questions = quiz_report_get_significant_questions($quiz1);
@@ -253,7 +254,7 @@ class report_test extends \advanced_testcase {
         $table = new \quiz_markspersection_table($quiz1, $context, $qmsubselect, $reportoptions,
         $empty, $studentsjoins, $questions, null);
         $table->download = null;
-        $table->define_columns(array('fullname'));
+        $table->define_columns(['fullname']);
         $table->sortable(true, 'uniqueid');
         $table->define_baseurl(new \moodle_url('/mod/quiz/report.php'));
         $table->setup();
@@ -279,7 +280,7 @@ class report_test extends \advanced_testcase {
         $table = new \quiz_markspersection_table($quiz1, $context, $qmsubselect, $reportoptions,
         $empty, $studentsjoins, $questions, null);
         $table->download = null;
-        $table->define_columns(array('fullname'));
+        $table->define_columns(['fullname']);
         $table->sortable(true, 'uniqueid');
         $table->define_baseurl(new \moodle_url('/mod/quiz/report.php'));
         $table->setup();
@@ -307,7 +308,7 @@ class report_test extends \advanced_testcase {
      * @param \stdClass $user The user record object who submitted this attempt.
      * @param array $answers The answers submitted by the user.
      *
-     * @return \quiz_attempt The attempt object created.
+     * @return quiz_attempt The attempt object created.
      */
     private function submitanswers($quizobj, $quba1, $user, $answers) {
         $timenow = time();
@@ -316,13 +317,13 @@ class report_test extends \advanced_testcase {
         quiz_attempt_save_started($quizobj, $quba1, $attempt);
 
         // Process some responses from the student 1.
-        $attemptobj = \quiz_attempt::create($attempt->id);
-        $tosubmit = array();
+        $attemptobj = quiz_attempt::create($attempt->id);
+        $tosubmit = [];
         foreach ($answers as $ianswer => $answer) {
             if (is_numeric($answer)) {
-                $tosubmit[$ianswer + 1] = array('answer' => $answer);
+                $tosubmit[$ianswer + 1] = ['answer' => $answer];
             } else {
-                $tosubmit[$ianswer + 1] = array('answer' => $answer, 'answerformat' => FORMAT_PLAIN);
+                $tosubmit[$ianswer + 1] = ['answer' => $answer, 'answerformat' => FORMAT_PLAIN];
             }
         }
         $attemptobj->process_submitted_actions($timenow, false, $tosubmit);

@@ -29,6 +29,8 @@ require_once($CFG->dirroot . '/mod/quiz/report/overview/report.php');
 require_once($CFG->dirroot . '/mod/quiz/report/markspersection/markspersection_form.php');
 require_once($CFG->dirroot . '/mod/quiz/report/markspersection/markspersection_options.php');
 require_once($CFG->dirroot . '/mod/quiz/report/markspersection/markspersection_table.php');
+
+use mod_quiz\quiz_settings;
 use quiz_markspersection\quiz_attemptreport;
 
 /**
@@ -70,7 +72,7 @@ class quiz_markspersection_report extends quiz_overview_report {
 
         // Prepare for downloading, if applicable.
         $courseshortname = format_string($course->shortname, true,
-                array('context' => context_course::instance($course->id)));
+                ['context' => context_course::instance($course->id)]);
         $table = new quiz_markspersection_table($quiz, $this->context, $this->qmsubselect,
                 $options, $groupstudentsjoins, $studentsjoins, $questions, $options->get_url());
         $filename = quiz_report_download_filename(get_string('markspersectionfilename', 'quiz_markspersection'),
@@ -109,7 +111,7 @@ class quiz_markspersection_report extends quiz_overview_report {
 
         $hasquestions = quiz_has_questions($quiz->id);
 
-        $quizobj = quiz::create($quiz->id);
+        $quizobj = quiz_settings::create($quiz->id);
         $sections = $quizobj->get_sections();
         if (count($sections) <= 1) {
             $this->print_header_and_tabs($cm, $course, $quiz);
@@ -141,8 +143,8 @@ class quiz_markspersection_report extends quiz_overview_report {
             }
 
             // Define table columns.
-            $columns = array();
-            $headers = array();
+            $columns = [];
+            $headers = [];
 
             if (!$table->is_downloading() && $options->checkboxcolumn) {
                 $columnname = 'checkbox';
@@ -207,7 +209,7 @@ class quiz_markspersection_report extends quiz_overview_report {
         $output = $OUTPUT->notification(get_string('nosections', 'quiz_markspersection'));
         if (has_capability('mod/quiz:manage', $context)) {
             $output .= $OUTPUT->single_button(new moodle_url('/mod/quiz/edit.php',
-            array('cmid' => $cm->id)), get_string('editquiz', 'quiz'), 'get');
+            ['cmid' => $cm->id]), get_string('editquiz', 'quiz'), 'get');
         }
 
         return $output;

@@ -24,9 +24,8 @@
  */
 
 
-defined('MOODLE_INTERNAL') || die();
-
-require_once($CFG->dirroot . '/mod/quiz/report/attemptsreport_table.php');
+use mod_quiz\local\reports\attempts_report_table;
+use mod_quiz\quiz_settings;
 use quiz_markspersection\quiz_attemptreport;
 
 /**
@@ -39,10 +38,10 @@ use quiz_markspersection\quiz_attemptreport;
 class quiz_markspersection_table extends quiz_overview_table {
 
     /** @var array Array of quiz_attemptreport (kept for further usage, to avoid unnecessary initialisations and calculations). */
-    private $attemptreports = array();
+    private $attemptreports = [];
 
     /** @var array Array of attemps section marks. */
-    private $attemptsectionsmarks = array();
+    private $attemptsectionsmarks = [];
 
     /** @var Array Array of attempts ids in the report. */
     private $attemptsids = [];
@@ -61,7 +60,7 @@ class quiz_markspersection_table extends quiz_overview_table {
     public function __construct($quiz, $context, $qmsubselect,
              $options, \core\dml\sql_join $groupstudentsjoins,
             \core\dml\sql_join $studentsjoins, $questions, $reporturl) {
-            quiz_attempts_report_table::__construct('mod-quiz-report-markspersection-report', $quiz , $context,
+        attempts_report_table::__construct('mod-quiz-report-markspersection-report', $quiz , $context,
                 $qmsubselect, $options, $groupstudentsjoins, $studentsjoins, $questions, $reporturl);
     }
 
@@ -161,12 +160,12 @@ class quiz_markspersection_table extends quiz_overview_table {
         } else {
             $namekey = 'fullname';
         }
-        $averagerow = array(
+        $averagerow = [
             $namekey       => $label,
             'sumgrades'    => $this->format_average($record),
             'feedbacktext' => strip_tags(quiz_report_feedback_for_grade(
-                                         $record->grade, $this->quiz->id, $this->context))
-        );
+                                         $record->grade, $this->quiz->id, $this->context)),
+        ];
         $qubaids = new qubaid_join("{quiz_attempts} quizaouter
                 JOIN (
                     SELECT DISTINCT quiza.id
@@ -201,7 +200,7 @@ class quiz_markspersection_table extends quiz_overview_table {
      * Redefine the parent function with only relevant information (quiz_overview_table has too many).
      */
     protected function submit_buttons() {
-        quiz_attempts_report_table::submit_buttons();
+        attempts_report_table::submit_buttons();
     }
 
     /**
@@ -256,7 +255,7 @@ class quiz_markspersection_table extends quiz_overview_table {
         // therefore, it is better to use a very simple join, which may include
         // too many records, than to do a super-accurate join.
         $qubaids = new qubaid_join("{quiz_attempts} {$alias}quiza", "{$alias}quiza.uniqueid",
-                "{$alias}quiza.quiz = :{$alias}quizid", array("{$alias}quizid" => $this->sql->params['quizid']));
+                "{$alias}quiza.quiz = :{$alias}quizid", ["{$alias}quizid" => $this->sql->params['quizid']]);
 
         list($inlineview, $viewparams) = $this->question_attempt_latest_state_view($alias, $qubaids);
 
@@ -286,7 +285,7 @@ class quiz_markspersection_table extends quiz_overview_table {
         $where = $qubaids->where() . " AND {$alias}qa.questionid IN($questionsidsstr)";
         $whereparams = $qubaids->from_where_params();
         // The name "marksection" givent to the SUM function is the one to reuse in get_required_latest_state_fields.
-        return array("(
+        return ["(
                 SELECT {$alias}qa.questionusageid,
                        SUM({$alias}qas.fraction * {$alias}qa.maxmark) AS marksection,
                        {$alias}qas.userid
@@ -294,7 +293,7 @@ class quiz_markspersection_table extends quiz_overview_table {
                   JOIN {question_attempt_steps} {$alias}qas ON {$alias}qas.questionattemptid = {$alias}qa.id
                  WHERE {$where}
                  GROUP BY {$alias}qa.questionusageid, {$alias}qas.userid
-            ) {$alias}", $whereparams);
+            ) {$alias}", $whereparams];
     }
 
     /**
@@ -304,12 +303,12 @@ class quiz_markspersection_table extends quiz_overview_table {
      */
     public function get_questions_in_section($sectionid) {
         $cm = get_coursemodule_from_instance('quiz', $this->quiz->id, $this->quiz->course, false, MUST_EXIST);
-        $quizobj = new \quiz($this->quiz, $cm, $this->quiz->course);
+        $quizobj = new quiz_settings($this->quiz, $cm, $this->quiz->course);
         $structure = $quizobj->get_structure();
         $slots = $structure->get_slots_in_section($sectionid);
 
         // Get all the questions in the slots of this section.
-        $questionsinsection = array();
+        $questionsinsection = [];
         foreach ($this->questions as $question) {
             if (in_array($question->slot, $slots)) {
                 $questionsinsection[] = $question->id;
