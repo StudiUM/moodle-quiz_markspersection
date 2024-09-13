@@ -1,3 +1,8 @@
+# $${\color{red}The \space plugin \space is \space only \space maintained \space for \space Moodle \space version \space 4.3.}$$
+# $${\color{red}There \space will \space be \space no \space maintenance \space for \space later \space versions}$$
+# $${\color{red}and \space this \space is \space because \space Moodle \space offers \space the \space same \space feature}$$
+# $${\color{red}that \space is \space integrated \space in \space version \space 4.4. \space For \space more \space details \space see: }$$
+# https://tracker.moodle.org/browse/MDL-74610$$
 
 # moodle-quiz_markspersection
 
