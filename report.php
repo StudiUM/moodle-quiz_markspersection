@@ -170,7 +170,8 @@ class quiz_markspersection_report extends quiz_overview_report {
             $questions = $quizobj->get_questions();
             foreach ($sections as $isection => $section) {
                 $columns[] = 'sectionmark' . $section->id;
-                $header = empty($section->heading) ? get_string('sectionnoname', 'quiz_markspersection') : $section->heading;
+                $header = empty($section->heading) ? get_string('sectionnoname', 'quiz_markspersection') :
+                    format_string($section->heading, true, ['context' => $this->context]);
                 if (!$table->is_downloading()) {
                     $header .= '<br />';
                 } else {
