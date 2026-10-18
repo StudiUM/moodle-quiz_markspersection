@@ -168,25 +168,27 @@ class quiz_markspersection_report extends quiz_overview_report {
             $quizobj->preload_questions();
             $quizobj->load_questions();
             $questions = $quizobj->get_questions();
-            foreach ($sections as $isection => $section) {
-                $columns[] = 'sectionmark' . $section->id;
-                $header = empty($section->heading) ? get_string('sectionnoname', 'quiz_markspersection') : $section->heading;
-                if (!$table->is_downloading()) {
-                    $header .= '<br />';
-                } else {
-                    $header .= ' ';
-                }
-
-                // Calculate grades by section.
-                $sum = 0;
-                foreach ($questions as $question) {
-                    $lastslot = isset($sections[$isection + 1]) ? $sections[$isection + 1]->firstslot : null;
-                    if ($question->slot >= $section->firstslot && (is_null($lastslot) || $question->slot < $lastslot)) {
-                        $sum += $question->maxmark;
+            if ($options->usercanseegrades) {
+                foreach ($sections as $isection => $section) {
+                    $columns[] = 'sectionmark' . $section->id;
+                    $header = empty($section->heading) ? get_string('sectionnoname', 'quiz_markspersection') : $section->heading;
+                    if (!$table->is_downloading()) {
+                        $header .= '<br />';
+                    } else {
+                        $header .= ' ';
                     }
+
+                    // Calculate grades by section.
+                    $sum = 0;
+                    foreach ($questions as $question) {
+                        $lastslot = isset($sections[$isection + 1]) ? $sections[$isection + 1]->firstslot : null;
+                        if ($question->slot >= $section->firstslot && (is_null($lastslot) || $question->slot < $lastslot)) {
+                            $sum += $question->maxmark;
+                        }
+                    }
+                    $header .= '/' . quiz_format_grade($quiz, $sum);
+                    $headers[] = $header;
                 }
-                $header .= '/' . quiz_format_grade($quiz, $sum);
-                $headers[] = $header;
             }
 
             $this->set_up_table_columns($table, $columns, $headers, $this->get_base_url(), $options, false);

@@ -300,6 +300,83 @@ class report_test extends \advanced_testcase {
 
     }
 
+    #[\PHPUnit\Framework\Attributes\IgnoreDeprecations]
+    /**
+     * Section mark columns are hidden when the viewer may not see grades.
+     */
+    public function test_display_hides_section_marks_without_grade_access(): void {
+        $this->resetAfterTest();
+
+        $html = $this->display_report_with_hidden_marks(false);
+
+        $this->assertStringNotContainsString('tsort=sumgrades', $html);
+        $this->assertStringNotContainsString('tsort=sectionmark', $html);
+        $this->assertStringNotContainsString('Hidden section B', $html);
+    }
+
+    #[\PHPUnit\Framework\Attributes\IgnoreDeprecations]
+    /**
+     * Section mark columns are shown when the viewer may see hidden grades.
+     */
+    public function test_display_shows_section_marks_with_grade_access(): void {
+        $this->resetAfterTest();
+
+        $html = $this->display_report_with_hidden_marks(true);
+
+        $this->assertStringContainsString('tsort=sumgrades', $html);
+        $this->assertStringContainsString('tsort=sectionmark', $html);
+        $this->assertStringContainsString('Hidden section B', $html);
+    }
+
+    /**
+     * Render the report for a teacher on a quiz with two sections whose review options hide marks.
+     *
+     * @param bool $canviewhidden whether the teacher keeps moodle/grade:viewhidden.
+     * @return string the report output.
+     */
+    private function display_report_with_hidden_marks(bool $canviewhidden): string {
+        global $DB, $PAGE;
+
+        $course = $this->getDataGenerator()->create_course();
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'teacher');
+
+        $quizgenerator = $this->getDataGenerator()->get_plugin_generator('mod_quiz');
+        $quiz = $quizgenerator->create_instance(['course' => $course->id, 'questionsperpage' => 0,
+            'grade' => 100.0, 'sumgrades' => 2, 'marksduring' => 0, 'marksimmediately' => 0, 'marksopen' => 0,
+            'marksclosed' => 0]);
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $questiongenerator->create_question_category();
+        $question1 = $questiongenerator->create_question('truefalse', null, ['category' => $cat->id]);
+        quiz_add_quiz_question($question1->id, $quiz, 1);
+        $question2 = $questiongenerator->create_question('truefalse', null, ['category' => $cat->id]);
+        quiz_add_quiz_question($question2->id, $quiz, 2);
+
+        $quizobj = quiz_settings::create($quiz->id, $student->id);
+        \mod_quiz\structure::create_for_quiz($quizobj)->add_section_heading(2, 'Hidden section B');
+        $quba = \question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
+        $quba->set_preferred_behaviour($quizobj->get_quiz()->preferredbehaviour);
+        $this->submitanswers($quizobj, $quba, $student, [1, 1]);
+        $this->resetDebugging();
+
+        $cm = get_coursemodule_from_instance('quiz', $quiz->id, $course->id);
+        $context = \context_module::instance($cm->id);
+        if (!$canviewhidden) {
+            $teacherrole = $DB->get_field('role', 'id', ['shortname' => 'teacher']);
+            assign_capability('moodle/grade:viewhidden', CAP_PROHIBIT, $teacherrole, $context->id);
+        }
+
+        $this->setUser($teacher);
+        $PAGE = new \moodle_page();
+        $PAGE->set_url(new \moodle_url('/mod/quiz/report.php', ['id' => $cm->id, 'mode' => 'markspersection']));
+        $PAGE->set_cm($cm, $course);
+        $quiz = $DB->get_record('quiz', ['id' => $quiz->id]);
+
+        ob_start();
+        (new \quiz_markspersection_report())->display($quiz, $cm, $course);
+        return ob_get_clean();
+    }
+
     /**
      * Create an attempt by submitting answers for a user.
      *
